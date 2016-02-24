@@ -63,15 +63,15 @@ instance Default WriterState where
 writeBBCode :: WriterOptions -> Pandoc -> String
 writeBBCode opts document@(Pandoc meta blocks) =
     "Let's face it, writeBBCode is not implemented at all" ++ show document ++ "\n" ++
-    blockListToMarkdown opts blocks
+    evalState (blockListToMarkdown opts blocks) def
 
 type BBWriter = State WriterState String
     
 blockListToMarkdown :: WriterOptions -- ^ Options
                     -> [Block]       -- ^ List of block elements
-                    -> String
+                    -> BBWriter
 --blockListToMarkdown opts = evalState (intercalate "\n" . map blockToBBCode) def where
-blockListToMarkdown opts = intercalate "\n" . map blockToBBCode where
+blockListToMarkdown opts = return . intercalate "\n" . map blockToBBCode where
     blockToBBCode (Header n _ xs) = bb "b" (show xs)
     blockToBBCode (Para ils)      = inlinesToBBCode ils ++ "\n"
     blockToBBCode (BulletList blockss) = ":-("
