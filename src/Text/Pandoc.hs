@@ -171,6 +171,7 @@ import Text.Pandoc.Writers.Haddock
 import Text.Pandoc.Writers.CommonMark
 import Text.Pandoc.Writers.Custom
 import Text.Pandoc.Writers.TEI
+import Text.Pandoc.Writers.BBCode
 import Text.Pandoc.Templates
 import Text.Pandoc.Options
 import Text.Pandoc.Shared (safeRead, warn, mapLeft, pandocVersion)
@@ -315,6 +316,7 @@ writers = [
   ,("haddock"      , PureStringWriter writeHaddock)
   ,("commonmark"   , PureStringWriter writeCommonMark)
   ,("tei"          , PureStringWriter writeTEI)
+  ,("bbcode"       , PureStringWriter writeBBCode)
   ]
 
 getDefaultExtensions :: String -> Set Extension

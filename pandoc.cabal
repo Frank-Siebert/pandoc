@@ -366,6 +366,7 @@ Library
                    Text.Pandoc.Writers.EPUB,
                    Text.Pandoc.Writers.FB2,
                    Text.Pandoc.Writers.TEI,
+                   Text.Pandoc.Writers.BBCode,
                    Text.Pandoc.PDF,
                    Text.Pandoc.UTF8,
                    Text.Pandoc.Templates,
