@@ -72,19 +72,19 @@ blockListToMarkdown :: WriterOptions -- ^ Options
                     -> BBWriter
 blockListToMarkdown opts blocks = intercalate "\n" <$> mapM blockToBBCode blocks where
     blockToBBCode (Header n _ xs) = return $ bb "b" (show xs)
-    blockToBBCode (Para ils)      = return $ inlinesToBBCode ils ++ "\n"
+    blockToBBCode (Para ils)      = do x <- inlinesToBBCode ils; return $ x ++ "\n"
     blockToBBCode (BulletList blockss) = return ":-("
 
-inlinesToBBCode :: [Inline] -> String
-inlinesToBBCode = concatMap inlineToBBCode
+inlinesToBBCode :: [Inline] -> BBWriter
+inlinesToBBCode ils = concat <$> mapM inlineToBBCode ils
     
-inlineToBBCode :: Inline -> String
-inlineToBBCode (Str string) = string
-inlineToBBCode (Emph        ils) = bb "i" $ inlinesToBBCode ils
-inlineToBBCode (Strong      ils) = bb "b" $ inlinesToBBCode ils
-inlineToBBCode (Strikeout   ils) = bb "s" $ inlinesToBBCode ils
+inlineToBBCode :: Inline -> BBWriter
+inlineToBBCode (Str string) = return string
+inlineToBBCode (Emph        ils) = bb "i" <$> inlinesToBBCode ils
+inlineToBBCode (Strong      ils) = bb "b" <$> inlinesToBBCode ils
+inlineToBBCode (Strikeout   ils) = bb "s" <$> inlinesToBBCode ils
 inlineToBBCode (Superscript ils) = inlinesToBBCode ils -- not supported
-inlineToBBCode (Subscript   ils) = bbo "size" "=2" $ inlinesToBBCode ils
+inlineToBBCode (Subscript   ils) = bbo "size" "=2" <$> inlinesToBBCode ils
 -- TODO: emulate with font size!
 --SmallCaps [Inline]	
 --Small caps text (list of inlines)
@@ -95,9 +95,9 @@ Citation (list of inlines)
 Code Attr String	
 Inline code (literal)
 -}
-inlineToBBCode (Space) = " "
-inlineToBBCode (SoftBreak) = " "
-inlineToBBCode (LineBreak) = "\n"
+inlineToBBCode (Space)           = return " "
+inlineToBBCode (SoftBreak)       = return " "
+inlineToBBCode (LineBreak)       = return "\n"
 {-
 Math MathType String	
 TeX math (literal)
@@ -115,8 +115,8 @@ Generic inline container with attributes
 
 
 bb :: String -> String -> String
-bb = bbo ""
+bb tag = bbo tag ""
 
 bbo ::String -> String -> String -> String
-bbo opt tag x = '[':tag ++ opt ++ ']':x ++ '[':'/':tag ++ "]"
+bbo tag opt x = '[':tag ++ opt ++ ']':x ++ '[':'/':tag ++ "]"
 
