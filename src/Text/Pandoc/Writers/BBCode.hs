@@ -66,7 +66,7 @@ writeBBCode opts document@(Pandoc meta blocks) =
     evalState (blockListToMarkdown opts blocks) def
 
 type BBWriter = State WriterState String
-    
+
 blockListToMarkdown :: WriterOptions -- ^ Options
                     -> [Block]       -- ^ List of block elements
                     -> BBWriter
@@ -77,41 +77,38 @@ blockListToMarkdown opts blocks = intercalate "\n" <$> mapM blockToBBCode blocks
 
 inlinesToBBCode :: [Inline] -> BBWriter
 inlinesToBBCode ils = concat <$> mapM inlineToBBCode ils
-    
+
 inlineToBBCode :: Inline -> BBWriter
 inlineToBBCode (Str string) = return string
 inlineToBBCode (Emph        ils) = bb "i" <$> inlinesToBBCode ils
 inlineToBBCode (Strong      ils) = bb "b" <$> inlinesToBBCode ils
 inlineToBBCode (Strikeout   ils) = bb "s" <$> inlinesToBBCode ils
 inlineToBBCode (Superscript ils) = inlinesToBBCode ils -- not supported
-inlineToBBCode (Subscript   ils) = bbo "size" "=2" <$> inlinesToBBCode ils
+inlineToBBCode (Subscript   ils) = relSize (-2) $ inlinesToBBCode ils
 -- TODO: emulate with font size!
---SmallCaps [Inline]	
+--SmallCaps [Inline]
 --Small caps text (list of inlines)
-{-Quoted QuoteType [Inline]	
+{-Quoted QuoteType [Inline]
 Quoted text (list of inlines)
-Cite [Citation] [Inline]	
+Cite [Citation] [Inline]
 Citation (list of inlines)
-Code Attr String	
-Inline code (literal)
 -}
+inlineToBBCode (Code attr s)     = return (bb "code" s)
 inlineToBBCode (Space)           = return " "
 inlineToBBCode (SoftBreak)       = return " "
 inlineToBBCode (LineBreak)       = return "\n"
+inlineToBBCode (Math mt s)       = return ('$' : bb "i" s ++ "$")
 {-
-Math MathType String	
-TeX math (literal)
-RawInline Format String	
+RawInline Format String
 Raw inline
-Link Attr [Inline] Target	
+Link Attr [Inline] Target
 Hyperlink: alt text (list of inlines), target
-Image Attr [Inline] Target	
+Image Attr [Inline] Target
 Image: alt text (list of inlines), target
-Note [Block]	
+Note [Block]
 Footnote or endnote
-Span Attr [Inline]	
-Generic inline container with attributes
 -}
+inlineToBBCode (Span attr ils)   = inlinesToBBCode ils
 
 
 bb :: String -> String -> String
@@ -120,3 +117,14 @@ bb tag = bbo tag ""
 bbo ::String -> String -> String -> String
 bbo tag opt x = '[':tag ++ opt ++ ']':x ++ '[':'/':tag ++ "]"
 
+relSize :: Int -> BBWriter -> BBWriter
+relSize d wr = do st <- get
+                  let size  = currentSize st
+                  let size' = clamp (1,7) (size - 1)
+                  put $ st { currentSize = size' }
+                  result <- wr
+                  put st
+                  return (bbo "size" ('=':show size') result)
+
+clamp :: Ord a => (a,a) -> a -> a
+clamp (lo,hi) x = max lo (min hi x)
