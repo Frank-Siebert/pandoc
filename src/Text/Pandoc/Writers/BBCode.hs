@@ -71,9 +71,21 @@ blockListToMarkdown :: WriterOptions -- ^ Options
                     -> [Block]       -- ^ List of block elements
                     -> BBWriter
 blockListToMarkdown opts blocks = intercalate "\n" <$> mapM blockToBBCode blocks where
-    blockToBBCode (Header n _ xs) = return $ bb "b" (show xs)
-    blockToBBCode (Para ils)      = do x <- inlinesToBBCode ils; return $ x ++ "\n"
-    blockToBBCode (BulletList blockss) = return ":-("
+    blockToBBCode (Header n _ xs)      = return $ bb "b" (show xs)
+    blockToBBCode (Plain ils)          = do x <- inlinesToBBCode ils; return $ x ++ "\n"
+    blockToBBCode (Para ils)           = do x <- inlinesToBBCode ils; return $ x ++ "\n"
+    blockToBBCode (CodeBlock attr s)   = return (bb "code" s)
+    blockToBBCode (RawBlock  attr s)   = return (bb "code" s)
+    blockToBBCode (BlockQuote blocks)  = bb "quote" <$> blockListToMarkdown opts blocks
+    blockToBBCode (OrderedList listAttr blockss) =
+        (bbo "list" "=1") . concat <$> mapM (\blocks -> ("[*]"++) <$> blockListToMarkdown opts blocks) blockss
+    blockToBBCode (BulletList blockss) =
+        (bb  "list"     ) . concat <$> mapM (\blocks -> ("[*]"++) <$> blockListToMarkdown opts blocks) blockss
+    blockToBBCode (DefinitionList xs)  = return ":-("
+    blockToBBCode (HorizontalRule)     = return "\n\n--------------------------------\n\n"
+    blockToBBCode (Table _ _ _ _ _)    = return "Implement tables yourself if you want them."
+    blockToBBCode (Div attr blocks)    = blockListToMarkdown opts blocks
+    blockToBBCode Null                 = return []
 
 inlinesToBBCode :: [Inline] -> BBWriter
 inlinesToBBCode ils = concat <$> mapM inlineToBBCode ils
@@ -93,7 +105,7 @@ Quoted text (list of inlines)
 Cite [Citation] [Inline]
 Citation (list of inlines)
 -}
-inlineToBBCode (Code attr s)     = return (bb "code" s)
+inlineToBBCode (Code attr s)     = return (bb "b" s) -- [code] is for blocks, not inline
 inlineToBBCode (Space)           = return " "
 inlineToBBCode (SoftBreak)       = return " "
 inlineToBBCode (LineBreak)       = return "\n"
