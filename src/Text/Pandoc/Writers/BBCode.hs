@@ -72,8 +72,8 @@ blocksToBBCode      :: WriterOptions -- ^ Options
                     -> BBWriter
 blocksToBBCode opts blocks = intercalate "\n" <$> mapM blockToBBCode blocks where
     blockToBBCode (Header n _ xs)      = return $ bb "b" (show xs)
-    blockToBBCode (Plain ils)          = do x <- inlinesToBBCode ils; return $ x ++ "\n"
-    blockToBBCode (Para ils)           = do x <- inlinesToBBCode ils; return $ x ++ "\n"
+    blockToBBCode (Plain ils)          = do x <- inlinesToBBCode opts ils; return $ x ++ "\n"
+    blockToBBCode (Para ils)           = do x <- inlinesToBBCode opts ils; return $ x ++ "\n"
     blockToBBCode (CodeBlock attr s)   = return (bb "code" s)
     blockToBBCode (RawBlock  attr s)   = return (bb "code" s)
     blockToBBCode (BlockQuote blocks)  = bb "quote" <$> blocksToBBCode opts blocks
@@ -87,31 +87,31 @@ blocksToBBCode opts blocks = intercalate "\n" <$> mapM blockToBBCode blocks wher
     blockToBBCode (Div attr blocks)    = blocksToBBCode opts blocks
     blockToBBCode Null                 = return []
 
-inlinesToBBCode :: [Inline] -> BBWriter
-inlinesToBBCode ils = concat <$> mapM inlineToBBCode ils
+inlinesToBBCode :: WriterOptions -> [Inline] -> BBWriter
+inlinesToBBCode opts ils = concat <$> mapM (inlineToBBCode opts) ils
 
-inlineToBBCode :: Inline -> BBWriter
-inlineToBBCode (Str string) = return string
-inlineToBBCode (Emph        ils) = bb "i" <$> inlinesToBBCode ils
-inlineToBBCode (Strong      ils) = bb "b" <$> inlinesToBBCode ils
-inlineToBBCode (Strikeout   ils) = bb "s" <$> inlinesToBBCode ils
-inlineToBBCode (Superscript ils) = inlinesToBBCode ils -- not supported
-inlineToBBCode (Subscript   ils) = relSize (-2) $ inlinesToBBCode ils
+inlineToBBCode :: WriterOptions -> Inline -> BBWriter
+inlineToBBCode opts (Str string)      = return string
+inlineToBBCode opts (Emph        ils) = bb "i" <$> inlinesToBBCode opts ils
+inlineToBBCode opts (Strong      ils) = bb "b" <$> inlinesToBBCode opts ils
+inlineToBBCode opts (Strikeout   ils) = bb "s" <$> inlinesToBBCode opts ils
+inlineToBBCode opts (Superscript ils) = inlinesToBBCode opts ils -- not supported
+inlineToBBCode opts (Subscript   ils) = relSize (-2) $ inlinesToBBCode opts ils
 -- TODO: emulate with font size!
 --SmallCaps [Inline]
 --Small caps text (list of inlines)
-inlineToBBCode (Quoted _ ils)    = do x <- inlinesToBBCode ils ; return ('"':x++"\"")
-inlineToBBCode (Cite _ ils)      = bb "quote" <$> inlinesToBBCode ils
-inlineToBBCode (Code attr s)     = return (bb "b" s) -- [code] is for blocks, not inline
-inlineToBBCode (Space)           = return " "
-inlineToBBCode (SoftBreak)       = return " "
-inlineToBBCode (LineBreak)       = return "\n"
-inlineToBBCode (Math mt s)       = return ('$' : bb "i" s ++ "$")
-inlineToBBCode (RawInline fmt s) = return s
-inlineToBBCode (Link  attr ils (url,title)) = bbo "url" ('=':url) <$> inlinesToBBCode ils
-inlineToBBCode (Image attr ils (url,title)) = bbo "img" ('=':url) <$> inlinesToBBCode ils
-inlineToBBCode (Note blocks)     = relSize (-1) $ blocksToBBCode undefined blocks
-inlineToBBCode (Span attr ils)   = inlinesToBBCode ils
+inlineToBBCode opts (Quoted _ ils)    = do x <- inlinesToBBCode opts ils ; return ('"':x++"\"")
+inlineToBBCode opts (Cite _ ils)      = bb "quote" <$> inlinesToBBCode opts ils
+inlineToBBCode opts (Code attr s)     = return (bb "b" s) -- [code] is for blocks, not inline
+inlineToBBCode opts (Space)           = return " "
+inlineToBBCode opts (SoftBreak)       = return " "
+inlineToBBCode opts (LineBreak)       = return "\n"
+inlineToBBCode opts (Math mt s)       = return ('$' : bb "i" s ++ "$")
+inlineToBBCode opts (RawInline fmt s) = return s
+inlineToBBCode opts (Link  attr ils (url,title)) = bbo "url" ('=':url) <$> inlinesToBBCode opts ils
+inlineToBBCode opts (Image attr ils (url,title)) = bbo "img" ('=':url) <$> inlinesToBBCode opts ils
+inlineToBBCode opts (Note blocks)     = relSize (-1) $ blocksToBBCode opts blocks
+inlineToBBCode opts (Span attr ils)   = inlinesToBBCode opts ils
 
 
 bb :: String -> String -> String
