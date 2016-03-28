@@ -18,7 +18,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 -}
 
 {- |
-   Module      : Text.Pandoc.Writers.Markdown
+   Module      : Text.Pandoc.Writers.BBCode
    Copyright   : Copyright (C) 2006-2015 John MacFarlane
    License     : GNU GPL, version 2 or above
 
@@ -26,9 +26,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
    Stability   : alpha
    Portability : portable
 
-Conversion of 'Pandoc' documents to markdown-formatted plain text.
+Conversion of 'Pandoc' documents to bbcode.
 
-Markdown:  <http://daringfireball.net/projects/markdown/>
+BBCode: <https://forum.paradoxplaza.com/forum/index.php?help/bb-codes>
 -}
 module Text.Pandoc.Writers.BBCode (writeBBCode) where
 import Text.Pandoc.Definition
