@@ -100,26 +100,17 @@ inlineToBBCode (Subscript   ils) = relSize (-2) $ inlinesToBBCode ils
 -- TODO: emulate with font size!
 --SmallCaps [Inline]
 --Small caps text (list of inlines)
-{-Quoted QuoteType [Inline]
-Quoted text (list of inlines)
-Cite [Citation] [Inline]
-Citation (list of inlines)
--}
+inlineToBBCode (Quoted _ ils)    = do x <- inlinesToBBCode ils ; return ('"':x++"\"")
+inlineToBBCode (Cite _ ils)      = bb "quote" <$> inlinesToBBCode ils
 inlineToBBCode (Code attr s)     = return (bb "b" s) -- [code] is for blocks, not inline
 inlineToBBCode (Space)           = return " "
 inlineToBBCode (SoftBreak)       = return " "
 inlineToBBCode (LineBreak)       = return "\n"
 inlineToBBCode (Math mt s)       = return ('$' : bb "i" s ++ "$")
-{-
-RawInline Format String
-Raw inline
-Link Attr [Inline] Target
-Hyperlink: alt text (list of inlines), target
-Image Attr [Inline] Target
-Image: alt text (list of inlines), target
-Note [Block]
-Footnote or endnote
--}
+inlineToBBCode (RawInline fmt s) = return s
+inlineToBBCode (Link  attr ils (url,title)) = bbo "url" ('=':url) <$> inlinesToBBCode ils
+inlineToBBCode (Image attr ils (url,title)) = bbo "img" ('=':url) <$> inlinesToBBCode ils
+inlineToBBCode (Note blocks)     = relSize (-1) $ blockListToMarkdown undefined blocks
 inlineToBBCode (Span attr ils)   = inlinesToBBCode ils
 
 
