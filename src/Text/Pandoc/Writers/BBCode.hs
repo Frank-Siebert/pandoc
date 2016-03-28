@@ -63,28 +63,28 @@ instance Default WriterState where
 writeBBCode :: WriterOptions -> Pandoc -> String
 writeBBCode opts document@(Pandoc meta blocks) =
     "Let's face it, writeBBCode is not implemented at all" ++ show document ++ "\n" ++
-    evalState (blockListToMarkdown opts blocks) def
+    evalState (blocksToBBCode opts blocks) def
 
 type BBWriter = State WriterState String
 
-blockListToMarkdown :: WriterOptions -- ^ Options
+blocksToBBCode      :: WriterOptions -- ^ Options
                     -> [Block]       -- ^ List of block elements
                     -> BBWriter
-blockListToMarkdown opts blocks = intercalate "\n" <$> mapM blockToBBCode blocks where
+blocksToBBCode opts blocks = intercalate "\n" <$> mapM blockToBBCode blocks where
     blockToBBCode (Header n _ xs)      = return $ bb "b" (show xs)
     blockToBBCode (Plain ils)          = do x <- inlinesToBBCode ils; return $ x ++ "\n"
     blockToBBCode (Para ils)           = do x <- inlinesToBBCode ils; return $ x ++ "\n"
     blockToBBCode (CodeBlock attr s)   = return (bb "code" s)
     blockToBBCode (RawBlock  attr s)   = return (bb "code" s)
-    blockToBBCode (BlockQuote blocks)  = bb "quote" <$> blockListToMarkdown opts blocks
+    blockToBBCode (BlockQuote blocks)  = bb "quote" <$> blocksToBBCode opts blocks
     blockToBBCode (OrderedList listAttr blockss) =
-        (bbo "list" "=1") . concat <$> mapM (\blocks -> ("[*]"++) <$> blockListToMarkdown opts blocks) blockss
+        (bbo "list" "=1") . concat <$> mapM (\blocks -> ("[*]"++) <$> blocksToBBCode opts blocks) blockss
     blockToBBCode (BulletList blockss) =
-        (bb  "list"     ) . concat <$> mapM (\blocks -> ("[*]"++) <$> blockListToMarkdown opts blocks) blockss
+        (bb  "list"     ) . concat <$> mapM (\blocks -> ("[*]"++) <$> blocksToBBCode opts blocks) blockss
     blockToBBCode (DefinitionList xs)  = return ":-("
     blockToBBCode (HorizontalRule)     = return "\n\n--------------------------------\n\n"
     blockToBBCode (Table _ _ _ _ _)    = return "Implement tables yourself if you want them."
-    blockToBBCode (Div attr blocks)    = blockListToMarkdown opts blocks
+    blockToBBCode (Div attr blocks)    = blocksToBBCode opts blocks
     blockToBBCode Null                 = return []
 
 inlinesToBBCode :: [Inline] -> BBWriter
@@ -110,7 +110,7 @@ inlineToBBCode (Math mt s)       = return ('$' : bb "i" s ++ "$")
 inlineToBBCode (RawInline fmt s) = return s
 inlineToBBCode (Link  attr ils (url,title)) = bbo "url" ('=':url) <$> inlinesToBBCode ils
 inlineToBBCode (Image attr ils (url,title)) = bbo "img" ('=':url) <$> inlinesToBBCode ils
-inlineToBBCode (Note blocks)     = relSize (-1) $ blockListToMarkdown undefined blocks
+inlineToBBCode (Note blocks)     = relSize (-1) $ blocksToBBCode undefined blocks
 inlineToBBCode (Span attr ils)   = inlinesToBBCode ils
 
 
