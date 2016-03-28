@@ -32,6 +32,7 @@ BBCode: <https://forum.paradoxplaza.com/forum/index.php?help/bb-codes>
 -}
 module Text.Pandoc.Writers.BBCode (writeBBCode) where
 import Text.Pandoc.Definition
+
 import Text.Pandoc.Walk
 import Text.Pandoc.Templates (renderTemplate')
 import Text.Pandoc.Shared
@@ -67,6 +68,10 @@ writeBBCode opts document@(Pandoc meta blocks) =
 
 type BBWriter = State WriterState String
 
+-- TODO use concatMapM more often?
+concatMapM :: (Monad m, Traversable t) => (a -> m [b]) -> t a -> m [b]
+concatMapM f xs = concat <$> mapM f xs
+
 blocksToBBCode      :: WriterOptions -- ^ Options
                     -> [Block]       -- ^ List of block elements
                     -> BBWriter
@@ -81,11 +86,17 @@ blocksToBBCode opts blocks = intercalate "\n" <$> mapM blockToBBCode blocks wher
         (bbo "list" "=1") . concat <$> mapM (\blocks -> ("[*]"++) <$> blocksToBBCode opts blocks) blockss
     blockToBBCode (BulletList blockss) =
         (bb  "list"     ) . concat <$> mapM (\blocks -> ("[*]"++) <$> blocksToBBCode opts blocks) blockss
-    blockToBBCode (DefinitionList xs)  = return ":-("
+    blockToBBCode (DefinitionList xs)  = formatDefinitionList opts xs
     blockToBBCode (HorizontalRule)     = return "\n\n--------------------------------\n\n"
     blockToBBCode (Table _ _ _ _ _)    = return "Implement tables yourself if you want them."
     blockToBBCode (Div attr blocks)    = blocksToBBCode opts blocks
     blockToBBCode Null                 = return []
+
+formatDefinitionList :: WriterOptions -> [([Inline],[[Block]])] -> BBWriter
+formatDefinitionList opts xs = bb "list" . concat <$> forM xs (\(ils,blockss) ->
+    do  def <- bb "b" . bb "u" <$> inlinesToBBCode opts ils
+        explanation <- concatMapM (blocksToBBCode opts) blockss
+        return $ '[':'*':']':def ++ ' ':explanation)
 
 inlinesToBBCode :: WriterOptions -> [Inline] -> BBWriter
 inlinesToBBCode opts ils = concat <$> mapM (inlineToBBCode opts) ils
