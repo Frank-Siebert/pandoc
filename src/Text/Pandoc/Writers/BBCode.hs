@@ -63,7 +63,6 @@ instance Default WriterState where
 
 writeBBCode :: WriterOptions -> Pandoc -> String
 writeBBCode opts document@(Pandoc meta blocks) =
-    "Let's face it, writeBBCode is not implemented at all" ++ show document ++ "\n" ++
     evalState (blocksToBBCode opts blocks) def
 
 type BBWriter = State WriterState String
