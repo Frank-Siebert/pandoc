@@ -75,7 +75,7 @@ blocksToBBCode      :: WriterOptions -- ^ Options
                     -> [Block]       -- ^ List of block elements
                     -> BBWriter
 blocksToBBCode opts blocks = intercalate "\n" <$> mapM blockToBBCode blocks where
-    blockToBBCode (Header n _ xs)      = return $ bb "b" (show xs)
+    blockToBBCode (Header n attr ils)  = relSize 1 $ inlinesToBBCode opts ils
     blockToBBCode (Plain ils)          = do x <- inlinesToBBCode opts ils; return $ x ++ "\n"
     blockToBBCode (Para ils)           = do x <- inlinesToBBCode opts ils; return $ x ++ "\n"
     blockToBBCode (CodeBlock attr s)   = return (bb "code" s)
@@ -133,7 +133,7 @@ bbo tag opt x = '[':tag ++ opt ++ ']':x ++ '[':'/':tag ++ "]"
 relSize :: Int -> BBWriter -> BBWriter
 relSize d wr = do st <- get
                   let size  = currentSize st
-                  let size' = clamp (1,7) (size - 1)
+                  let size' = clamp (1,7) (size + d)
                   put $ st { currentSize = size' }
                   result <- wr
                   put st
